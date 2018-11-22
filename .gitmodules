@@ -1,0 +1,3 @@
+[submodule "Propagation-Simulator"]
+	path = Propagation-Simulator
+	url = git@github.com:todoaskit/Propagation-Simulator.git
