@@ -1,8 +1,9 @@
 from NP import *
 from NPExtension import *
 from TestFDC import *
-from Baselines import MajorityVoting
+from Baselines import *
 from termcolor import cprint
+from MatplotlibUtill import *
 
 
 def get_synthetic_twitter_network(num_of_trees: int,
@@ -126,7 +127,7 @@ def block_information_by_model(network_propagation: TwitterNetworkPropagation, e
         return
 
     active_news_to_tree = {i: t for i, t in network_propagation.info_to_tree.items()
-                           if i not in network_propagation.info_blacklist}
+                           if not network_propagation.is_blocked(i)}
 
     selected_fake_news: List[Any] = model.select_fake_news(
         active_news_to_tree=active_news_to_tree,
@@ -145,9 +146,24 @@ def block_information_by_model(network_propagation: TwitterNetworkPropagation, e
             ), "red")
 
 
-def evaluate(finished_np: TwitterNetworkPropagation):
+def get_blocked_time_of_fake_news(finished_np: TwitterNetworkPropagation):
     assert finished_np.next_time == finished_np.get_time_to_finish()
-    raise NotImplementedError
+
+    block_log = finished_np.block_log
+
+    blocked_time_of_fake_news = []
+
+    for info, tree in finished_np.info_to_tree.items():
+        is_fake = tree.getattr("is_fake")
+        exposed = tree.getattr("exposed")
+        flagged = tree.getattr("flagged")
+        flag_log = tree.getattr("flag_log")
+
+        blocked_time = finished_np.get_blocked_time(info)
+        if blocked_time != -1 and is_fake:
+            blocked_time_of_fake_news.append(blocked_time)
+
+    return blocked_time_of_fake_news
 
 
 def simulate_models(models: List, seed_value=None,
@@ -165,10 +181,10 @@ def simulate_models(models: List, seed_value=None,
     node_to_abc_in_main = get_node_to_abc(
         nodes=_synthetic_network.nodes,
         type_to_assign_probs={
-            (0.9, 0.9, global_c): 0.3,
-            (0.1, 0.1, global_c): 0.2,
-            (0.6, 0.6, global_c): 0.3,
-            (0.4, 0.4, global_c): 0.2,
+            (0.9, 0.9, global_c): 0.25,
+            (0.7, 0.7, global_c): 0.25,
+            (0.3, 0.3, global_c): 0.25,
+            (0.1, 0.1, global_c): 0.25,
         },
         seed_value=seed_value,
     )
@@ -206,9 +222,20 @@ def simulate_models(models: List, seed_value=None,
 
 
 if __name__ == '__main__':
-    finished_networks = simulate_models(models=[MajorityVoting()], seed_value=42,
-                                        num_of_trees=50, expected_num_of_nodes=100, fake_ratio=0.2,
+    models_to_test = [MajorityVoting(), Random()]
+    finished_networks = simulate_models(models=models_to_test, seed_value=42,
+                                        num_of_trees=150, expected_num_of_nodes=100, fake_ratio=0.2,
                                         budget=1, start_time=3, select_exact=True,
                                         is_verbose=False)
+
+    num_of_fake_news = len(finished_networks[0].filter_trees(lambda x: x.is_fake))
+    finished_time = max(fn.get_time_to_finish() for fn in finished_networks)
+
+    bts = []
     for net in finished_networks:
-        evaluate(net)
+        bt = get_blocked_time_of_fake_news(net)
+        bts.append(bt)
+
+    build_hist(bts, [m.__class__.__name__ for m in models_to_test],
+               title="Blocked Fake News", xlabel="time", ylabel="number",
+               range=(0, finished_time), cumulative=True, histtype='step')
