@@ -81,8 +81,9 @@ def flag_by_abc(network_propagation: TwitterNetworkPropagation, event: Event,
     followers = network_propagation.user_id_to_follower_ids[event.node_id]
     info = event.getattr("info")
     is_fake = event.getattr("is_fake")
-    exposed, flagged = 0, 0
+
     flag_log: List[Tuple[int or float, Any]] = []
+    expose_log: List[Tuple[int or float, Any]] = []
 
     for f_id in followers:
 
@@ -90,7 +91,7 @@ def flag_by_abc(network_propagation: TwitterNetworkPropagation, event: Event,
         if network_propagation.get_status(info, f_id, "propagated"):
             continue
 
-        exposed += 1
+        expose_log.append((network_propagation.current_time, f_id))
 
         # If the node has been already flagged, this is considered as exposed node, but do not have chance to flag.
         if network_propagation.get_status(info, f_id, "flagged"):
@@ -102,18 +103,16 @@ def flag_by_abc(network_propagation: TwitterNetworkPropagation, event: Event,
         if np.random.choice([True, False], p=[1 - p_abstain, p_abstain]):
             if (is_fake and np.random.choice([True, False], p=[p_flag_fake, 1 - p_flag_fake])) or \
                     (not is_fake and np.random.choice([True, False], p=[1 - p_not_flag_not_fake, p_not_flag_not_fake])):
-                flagged += 1
                 network_propagation.set_status(info, f_id, "flagged", True)
                 flag_log.append((network_propagation.current_time, f_id))
 
     tree = network_propagation.get_propagation(info)
-    tree.setattr("exposed", tree.getattr("exposed", 0) + exposed)
-    tree.setattr("flagged", tree.getattr("flagged", 0) + flagged)
+    tree.setattr("expose_log", tree.getattr("expose_log", []) + expose_log)
     tree.setattr("flag_log", tree.getattr("flag_log", []) + flag_log)
 
     if is_verbose:
         print("Info [{}, {}] e{}/f{} after <{}> at {}t".format(
-            info, is_fake, tree.getattr("exposed", 0), tree.getattr("flagged", 0), event,
+            info, is_fake, tree.getattr("exposed", 0), len(tree.getattr("flag_log", [])), event,
             network_propagation.current_time)
         )
 
@@ -155,8 +154,7 @@ def get_blocked_time_of_fake_news(finished_np: TwitterNetworkPropagation):
 
     for info, tree in finished_np.info_to_tree.items():
         is_fake = tree.getattr("is_fake")
-        exposed = tree.getattr("exposed")
-        flagged = tree.getattr("flagged")
+        expose_log = tree.getattr("expose_log")
         flag_log = tree.getattr("flag_log")
 
         blocked_time = finished_np.get_blocked_time(info)

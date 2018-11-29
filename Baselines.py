@@ -28,7 +28,7 @@ class MajorityVoting:
                          select_exact: bool) -> List[Any]:
         voting_result: List[Tuple] = []
         for news_info, tree in active_news_to_tree.items():
-            flagged = tree.getattr("flagged")
+            flagged = len(tree.getattr("flag_log", []))
             voting_result.append((news_info, flagged))
 
         voting_result = sorted(voting_result, key=lambda nt: -nt[1])
