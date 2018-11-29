@@ -112,7 +112,7 @@ def flag_by_abc(network_propagation: TwitterNetworkPropagation, event: Event,
 
     if is_verbose:
         print("Info [{}, {}] e{}/f{} after <{}> at {}t".format(
-            info, is_fake, tree.getattr("exposed", 0), len(tree.getattr("flag_log", [])), event,
+            info, is_fake, len(tree.getattr("expose_log", [])), len(tree.getattr("flag_log", [])), event,
             network_propagation.current_time)
         )
 
@@ -140,7 +140,8 @@ def block_information_by_model(network_propagation: TwitterNetworkPropagation, e
         f_tree = network_propagation.get_propagation(f_info)
         if is_verbose:
             cprint("Block Info [{}, {}] e{}/f{} at {}t".format(
-                f_info, f_tree.getattr("is_fake"), f_tree.getattr("exposed", 0), f_tree.getattr("flagged", 0),
+                f_info, f_tree.getattr("is_fake"),
+                len(f_tree.getattr("expose_log", [])), len(f_tree.getattr("flag_log", [])),
                 network_propagation.current_time,
             ), "red")
 
@@ -220,9 +221,9 @@ def simulate_models(models: List, seed_value=None,
 
 
 if __name__ == '__main__':
-    models_to_test = [MajorityVoting(), Random()]
+    models_to_test = [WeightedMajorityVoting(), MajorityVoting(), Random()]
     finished_networks = simulate_models(models=models_to_test, seed_value=42,
-                                        num_of_trees=150, expected_num_of_nodes=100, fake_ratio=0.2,
+                                        num_of_trees=200, expected_num_of_nodes=100, fake_ratio=0.2,
                                         budget=1, start_time=3, select_exact=True,
                                         is_verbose=False)
 

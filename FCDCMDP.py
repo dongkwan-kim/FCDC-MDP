@@ -1,6 +1,9 @@
-from typing import Callable, List, Any
+from typing import Callable, List, Any, Dict
 
 import numpy as np
+
+from NP import PropagationTree
+from NPExtension import TwitterNetworkPropagation
 
 
 class MDP:
@@ -26,8 +29,6 @@ class MDP:
             assert self.rewards.shape == (len(states), len(actions))
         elif callable(rewards):
             self.reward_func = rewards
-        else:
-            self.reward_func = self.get_default_reward_func()
 
         self.transitions, self.transition_func = None, None
         if isinstance(transitions, list):
@@ -35,8 +36,6 @@ class MDP:
             assert self.transitions.shape == (len(states), len(actions), len(states))
         elif callable(transitions):
             self.transition_func = transitions
-        else:
-            self.transition_func = self.get_default_transition_func()
 
         self.discount = discount
         self.epsilon = epsilon
@@ -56,37 +55,34 @@ class MDP:
         elif self.rewards:
             return self.rewards[state][action]
 
-    @classmethod
-    def get_default_reward_func(cls) -> Callable:
-        raise NotImplementedError
-
-    @classmethod
-    def get_default_transition_func(cls) -> Callable:
-        raise NotImplementedError
-
 
 class FCDCMDP(MDP):
 
     def __init__(self, states: List[Any], actions: List[Any],
-                 rewards: List or Callable = None, transitions: List or Callable = None,
                  discount: float = 0.95, epsilon: float = 0.01):
+        rewards = self.fcdc_reward
+        transitions = self.fcdc_transition
         super().__init__(states, actions, rewards, transitions, discount, epsilon)
 
-    def update_states(self, new_states: List[Any]):
-        self.states = np.concatenate(self.states, np.array(new_states))
+    def select_fake_news(self,
+                         active_news_to_tree: Dict[Any, PropagationTree],
+                         network_propagation: TwitterNetworkPropagation,
+                         budget: int,
+                         select_exact: bool) -> List[Any]:
 
-    @classmethod
-    def get_default_reward_func(cls) -> Callable:
+        for news_info, tree in active_news_to_tree.items():
+            flag_log = tree.getattr("flag_log", [])
+            expose_log = tree.getattr("expose_log", [])
 
-        def default_reward_func(state, action) -> float:
-            raise NotImplementedError
+        return []
 
-        return default_reward_func
+    def get_prob_being_fake(self, flag_log, expose_log):
+        pass
 
-    @classmethod
-    def get_default_transition_func(cls) -> Callable:
 
-        def default_transition_func(state, action) -> Any:
-            raise NotImplementedError
+    def get_reward_of_adding_one(self, e, f):
+        return
 
-        return default_transition_func
+
+    def fcdc_transition(self, state, action):
+        pass
