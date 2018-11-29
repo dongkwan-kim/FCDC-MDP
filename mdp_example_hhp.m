@@ -29,7 +29,7 @@ flags = nan(M, T); % status matrix of exposure, each row denotes the news, and t
 
 %% for the simple simulation,
 expsr = [1,2,3;1,3,3];
-flags = [0,1,1;0,0,0];
+flags = [0,0,1;1,2,2];
 
 nS = size(S,1); % == 2^M : number of the whole states.
 Actions = nan(nchoosek(M,K), M); % set of actions.
