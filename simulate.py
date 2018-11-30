@@ -136,7 +136,9 @@ def block_information_by_model(network_propagation: TwitterNetworkPropagation, e
     )
 
     for f_info in selected_fake_news:
-        network_propagation.block_info(f_info)
+        # Block only fake news
+        if active_news_to_tree[f_info].getattr("is_fake"):
+            network_propagation.block_info(f_info)
         f_tree = network_propagation.get_propagation(f_info)
         if is_verbose:
             cprint("Block Info [{}, {}] e{}/f{} at {}t".format(
@@ -180,10 +182,10 @@ def simulate_models(models: List, seed_value=None,
     node_to_abc_in_main = get_node_to_abc(
         nodes=_synthetic_network.nodes,
         type_to_assign_probs={
-            (0.9, 0.9, global_c): 0.25,
+            (0.9, 0.9, global_c): 0.3,
             (0.7, 0.7, global_c): 0.25,
             (0.3, 0.3, global_c): 0.25,
-            (0.1, 0.1, global_c): 0.25,
+            (0.1, 0.1, global_c): 0.2,
         },
         seed_value=seed_value,
     )
