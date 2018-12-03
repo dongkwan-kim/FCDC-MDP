@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def build_hist(list_of_enumerable, labels, title, xlabel=None, ylabel=None, **kwargs):
+def build_hist(list_of_enumerable, labels, title, xlabel=None, ylabel=None, legend_loc="upper left",
+               **kwargs):
 
     fig, ax = plt.subplots(figsize=(5, 4))
 
@@ -14,7 +15,7 @@ def build_hist(list_of_enumerable, labels, title, xlabel=None, ylabel=None, **kw
         )
 
     ax.set_title(title)
-    ax.legend(loc="upper left")
+    ax.legend(loc=legend_loc)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     plt.show()
