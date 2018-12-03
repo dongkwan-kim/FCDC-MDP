@@ -132,20 +132,36 @@ def block_information_by_model(network_propagation: TwitterNetworkPropagation, e
 def get_blocked_time_of_fake_news(finished_np: TwitterNetworkPropagation):
     assert finished_np.next_time == finished_np.get_time_to_finish()
 
-    block_log = finished_np.block_log
-
     blocked_time_of_fake_news = []
 
     for info, tree in finished_np.info_to_tree.items():
         is_fake = tree.getattr("is_fake")
-        expose_log = tree.getattr("expose_log")
-        flag_log = tree.getattr("flag_log")
 
         blocked_time = finished_np.get_blocked_time(info)
         if blocked_time != -1 and is_fake:
             blocked_time_of_fake_news.append(blocked_time)
 
     return blocked_time_of_fake_news
+
+
+def get_non_exposed_user_to_fake_news(finished_np: TwitterNetworkPropagation) -> List[List[Any]]:
+    assert finished_np.next_time == finished_np.get_time_to_finish()
+
+    non_exposed_user_to_fake_news = []
+
+    for info, tree in finished_np.info_to_tree.items():
+        is_fake = tree.getattr("is_fake")
+        if is_fake and finished_np.is_blocked(info):
+            expose_log = tree.getattr("expose_log")
+            blocked_time = finished_np.get_blocked_time(info)
+            events_not_happened = [e for e in tree if e.time_stamp >= blocked_time]
+            followers = []
+            for e in events_not_happened:
+                followers += finished_np.user_id_to_follower_ids[e.node_id]
+            non_exposed_user_to_fake_news.append(
+                list(set(followers).difference({exposed for t, exposed in expose_log}))
+            )
+    return non_exposed_user_to_fake_news
 
 
 def simulate_models(models: List, seed_value=None,
@@ -159,7 +175,7 @@ def simulate_models(models: List, seed_value=None,
     )
     assign_fake_news_label(_synthetic_network, fake_ratio=fake_ratio, seed=seed_value)
 
-    global_c = 0.2
+    global_c = 0
     node_to_abc_in_main = get_node_to_abc(
         nodes=_synthetic_network.nodes,
         type_to_assign_probs={
@@ -205,20 +221,21 @@ def simulate_models(models: List, seed_value=None,
 
 if __name__ == '__main__':
     models_to_test = [WeightedMajorityVoting(), MajorityVoting(), Random()]
-    finished_networks = simulate_models(models=models_to_test, seed_value=4132,
-                                        number_of_nodes=50, num_of_trees=500, propagation_prob=0.5,
-                                        fake_ratio=0.2, with_draw=True,
-                                        budget=10, start_time=1, select_exact=True,
+    finished_networks = simulate_models(models=models_to_test, seed_value=874132,
+                                        number_of_nodes=150, num_of_trees=37, propagation_prob=0.5,
+                                        fake_ratio=0.3, with_draw=True,
+                                        budget=1, start_time=1, select_exact=True,
                                         is_verbose=True)
 
     num_of_fake_news = len(finished_networks[0].filter_trees(lambda x: x.is_fake))
     finished_time = max(fn.get_time_to_finish() for fn in finished_networks)
+    model_names = [m.__class__.__name__ for m in models_to_test]
 
-    bts = []
-    for net in finished_networks:
-        bt = get_blocked_time_of_fake_news(net)
-        bts.append(bt)
+    neu = [get_non_exposed_user_to_fake_news(net) for net in finished_networks]
+    build_bar(model_names, [sum([len(u) for u in us]) for us in neu],
+              ylabel="# of Users", title="Non-exposed Users to Fake News")
 
-    build_hist(bts, [m.__class__.__name__ for m in models_to_test],
+    bts = [get_blocked_time_of_fake_news(net) for net in finished_networks]
+    build_hist(bts, model_names,
                title="Blocked Fake News", xlabel="time", ylabel="number",
                range=(0, finished_time), cumulative=True, histtype='step')
