@@ -91,7 +91,7 @@ def flag_by_abc(network_propagation: TwitterNetworkPropagation, event: Event,
     tree.setattr("expose_log", tree.getattr("expose_log", []) + expose_log)
     tree.setattr("flag_log", tree.getattr("flag_log", []) + flag_log)
 
-    if is_verbose:
+    if is_verbose and len(followers) != 0:
         print("Info [{}, {}] e{}/f{} after <{}> at {}t".format(
             info, is_fake, len(tree.getattr("expose_log", [])), len(tree.getattr("flag_log", [])), event,
             network_propagation.current_time)
@@ -154,12 +154,12 @@ def simulate_models(models: List, seed_value=None,
                     is_verbose=True):
     _synthetic_network = get_synthetic_twitter_network_from_scratch(
         n=number_of_nodes, alpha=0.35, beta=0.6, gamma=0.05, delta_in=0.2, delta_out=0.5,
-        force_save=False, base_seed=100032, with_draw=with_draw,
+        force_save=False, base_seed=seed_value, with_draw=with_draw,
         number_of_props=num_of_trees, propagation_prob=propagation_prob, max_iter=2000,
     )
     assign_fake_news_label(_synthetic_network, fake_ratio=fake_ratio, seed=seed_value)
 
-    global_c = 0.5
+    global_c = 0.2
     node_to_abc_in_main = get_node_to_abc(
         nodes=_synthetic_network.nodes,
         type_to_assign_probs={
@@ -205,10 +205,10 @@ def simulate_models(models: List, seed_value=None,
 
 if __name__ == '__main__':
     models_to_test = [WeightedMajorityVoting(), MajorityVoting(), Random()]
-    finished_networks = simulate_models(models=models_to_test, seed_value=42,
-                                        number_of_nodes=500, num_of_trees=12, propagation_prob=0.5,
-                                        fake_ratio=0.4, with_draw=True,
-                                        budget=1, start_time=2, select_exact=True,
+    finished_networks = simulate_models(models=models_to_test, seed_value=4132,
+                                        number_of_nodes=50, num_of_trees=500, propagation_prob=0.5,
+                                        fake_ratio=0.2, with_draw=True,
+                                        budget=10, start_time=1, select_exact=True,
                                         is_verbose=True)
 
     num_of_fake_news = len(finished_networks[0].filter_trees(lambda x: x.is_fake))
