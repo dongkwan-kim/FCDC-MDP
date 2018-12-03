@@ -13,7 +13,8 @@ class Random:
                          network_propagation: TwitterNetworkPropagation,
                          budget: int,
                          select_exact: bool) -> List[Any]:
-        news_infos = [news_info for news_info in active_news_to_tree.keys()]
+        news_infos = [news_info for news_info in active_news_to_tree.keys()
+                      if not network_propagation.is_blocked(news_info)]
         np.random.shuffle(news_infos)
         return news_infos[:budget]
 
@@ -30,8 +31,9 @@ class MajorityVoting:
                          select_exact: bool) -> List[Any]:
         voting_result: List[Tuple] = []
         for news_info, tree in active_news_to_tree.items():
-            flagged = len(tree.getattr("flag_log", []))
-            voting_result.append((news_info, flagged))
+            if not network_propagation.is_blocked(news_info):
+                flagged = len(tree.getattr("flag_log", []))
+                voting_result.append((news_info, flagged))
 
         voting_result = sorted(voting_result, key=lambda nt: -nt[1])
         return [news_info for news_info, flagged in voting_result[:budget]]
@@ -74,11 +76,11 @@ class WeightedMajorityVoting(WeightedUserModel):
 
         voting_result: List[Tuple] = []
         for info, tree in active_news_to_tree.items():
-            flag_log = tree.getattr("flag_log", [])
-
-            weighted_vote = sum(self.scaling * self.get_p_flag_fake(node_id) * self.get_p_not_flag_not_fake(node_id)
-                                for _, node_id in flag_log)
-            voting_result.append((info, weighted_vote))
+            if not network_propagation.is_blocked(info):
+                flag_log = tree.getattr("flag_log", [])
+                weighted_vote = sum(self.scaling * self.get_p_flag_fake(node_id) * self.get_p_not_flag_not_fake(node_id)
+                                    for _, node_id in flag_log)
+                voting_result.append((info, weighted_vote))
 
         voting_result = sorted(voting_result, key=lambda nt: -nt[1])
         selected_news = [news_info for news_info, flagged in voting_result[:budget]]
