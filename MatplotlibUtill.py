@@ -23,6 +23,14 @@ def build_hist(list_of_enumerable, labels, title, xlabel=None, ylabel=None, lege
     return plt
 
 
+def build_bar(x, y, ylabel, title, **kwargs):
+    y_pos = np.arange(len(x))
+    plt.bar(y_pos, y, **kwargs)
+    plt.xticks(y_pos, x)
+    plt.ylabel(ylabel)
+    plt.title(title)
+
+
 if __name__ == '__main__':
 
     xs = [
