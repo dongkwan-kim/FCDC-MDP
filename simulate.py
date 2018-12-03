@@ -1,49 +1,30 @@
+from copy import deepcopy
+
 from NP import *
-from NPExtension import *
-from TestFDC import *
 from Baselines import *
 from termcolor import cprint
 from MatplotlibUtill import *
+from NetworkUtil import *
 
 
-def get_synthetic_twitter_network(num_of_trees: int,
-                                  expected_num_of_nodes: int,
-                                  fake_ratio: float,
-                                  base_seed: int = None) -> TwitterNetworkPropagation:
-    """
-    :param num_of_trees: number of stories to propagate
-    :param expected_num_of_nodes: num_of_nodes of each news ~ Possion(expected_num_of_nodes)
-    :param fake_ratio: probs that a news is fake
-    :param base_seed: fix randomness
-    :return: TwitterNetworkPropagation
-    """
-    g_and_tree_list = []
-    for i in range(num_of_trees):
-        num_of_nodes = np.random.poisson(expected_num_of_nodes)
-        seed_value = base_seed + i if base_seed else None
-
-        g = nx.random_tree(num_of_nodes, seed=seed_value)
-        root = sorted(nx.betweenness_centrality(g).items(), key=lambda kv: -kv[1])[0][0]
+def assign_fake_news_label(network_propagation: TwitterNetworkPropagation, fake_ratio: float, seed=None):
+    np.random.seed(seed)
+    for info, tree in network_propagation.info_to_tree.items():
         is_fake = True if np.random.random() < fake_ratio else False
-        tree = get_propagation_tree_of_full_graph(g, root, seed_value, info=i, is_fake=is_fake)
-
-        g_and_tree_list.append((g, tree))
-
-    twitter_network = get_twitter_network(dict(g_and_tree_list))
-    for i, (_, t) in enumerate(g_and_tree_list):
-        twitter_network.assign_one_propagation(i, t)
+        tree.setattr("is_fake", is_fake)
+        for event in tree:
+            event.setattr("is_fake", is_fake)
 
     cprint("Finished: get_synthetic_twitter_network", "green")
     cprint("\t- Fake: {}, True: {}".format(
-        len(twitter_network.filter_trees(lambda tree_x: tree_x.is_fake)),
-        len(twitter_network.filter_trees(lambda tree_x: not tree_x.is_fake)),
+        len(network_propagation.filter_trees(lambda tree_x: tree_x.is_fake)),
+        len(network_propagation.filter_trees(lambda tree_x: not tree_x.is_fake)),
     ), "green")
     cprint("\t- num_of_trees: {}, num_of_nodes_all: {}, num_of_events: {}".format(
-        num_of_trees,
-        len(twitter_network.nodes),
-        sum(len(tree) for tree in twitter_network.info_to_tree.values()),
+        len(network_propagation.info_to_tree),
+        len(network_propagation.nodes),
+        sum(len(tree) for tree in network_propagation.info_to_tree.values()),
     ), "green")
-    return twitter_network
 
 
 def get_node_to_abc(nodes: List[Any],
@@ -139,13 +120,13 @@ def block_information_by_model(network_propagation: TwitterNetworkPropagation, e
         # Block only fake news
         if active_news_to_tree[f_info].getattr("is_fake"):
             network_propagation.block_info(f_info)
-        f_tree = network_propagation.get_propagation(f_info)
-        if is_verbose:
-            cprint("Block Info [{}, {}] e{}/f{} at {}t".format(
-                f_info, f_tree.getattr("is_fake"),
-                len(f_tree.getattr("expose_log", [])), len(f_tree.getattr("flag_log", [])),
-                network_propagation.current_time,
-            ), "red")
+            f_tree = network_propagation.get_propagation(f_info)
+            if is_verbose:
+                cprint("Block Info [{}, {}] e{}/f{} at {}t".format(
+                    f_info, f_tree.getattr("is_fake"),
+                    len(f_tree.getattr("expose_log", [])), len(f_tree.getattr("flag_log", [])),
+                    network_propagation.current_time,
+                ), "red")
 
 
 def get_blocked_time_of_fake_news(finished_np: TwitterNetworkPropagation):
@@ -168,17 +149,17 @@ def get_blocked_time_of_fake_news(finished_np: TwitterNetworkPropagation):
 
 
 def simulate_models(models: List, seed_value=None,
-                    num_of_trees=50, expected_num_of_nodes=100, fake_ratio=0.2,
-                    budget=1, start_time=3, select_exact=True,
+                    number_of_nodes=500, num_of_trees=50, propagation_prob=0.5, with_draw=False,
+                    fake_ratio=0.2, budget=1, start_time=3, select_exact=True,
                     is_verbose=True):
-    _synthetic_network = get_synthetic_twitter_network(
-        num_of_trees=num_of_trees,
-        expected_num_of_nodes=expected_num_of_nodes,
-        fake_ratio=fake_ratio,
-        base_seed=seed_value,
+    _synthetic_network = get_synthetic_twitter_network_from_scratch(
+        n=number_of_nodes, alpha=0.35, beta=0.6, gamma=0.05, delta_in=0.2, delta_out=0.5,
+        force_save=False, base_seed=100032, with_draw=with_draw,
+        number_of_props=num_of_trees, propagation_prob=propagation_prob, max_iter=2000,
     )
+    assign_fake_news_label(_synthetic_network, fake_ratio=fake_ratio, seed=seed_value)
 
-    global_c = 0.9
+    global_c = 0.5
     node_to_abc_in_main = get_node_to_abc(
         nodes=_synthetic_network.nodes,
         type_to_assign_probs={
@@ -225,9 +206,10 @@ def simulate_models(models: List, seed_value=None,
 if __name__ == '__main__':
     models_to_test = [WeightedMajorityVoting(), MajorityVoting(), Random()]
     finished_networks = simulate_models(models=models_to_test, seed_value=42,
-                                        num_of_trees=200, expected_num_of_nodes=100, fake_ratio=0.2,
-                                        budget=1, start_time=3, select_exact=True,
-                                        is_verbose=False)
+                                        number_of_nodes=500, num_of_trees=12, propagation_prob=0.5,
+                                        fake_ratio=0.4, with_draw=True,
+                                        budget=1, start_time=2, select_exact=True,
+                                        is_verbose=True)
 
     num_of_fake_news = len(finished_networks[0].filter_trees(lambda x: x.is_fake))
     finished_time = max(fn.get_time_to_finish() for fn in finished_networks)
