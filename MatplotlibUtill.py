@@ -29,6 +29,9 @@ def build_bar(x, y, ylabel, title, **kwargs):
     plt.xticks(y_pos, x)
     plt.ylabel(ylabel)
     plt.title(title)
+    plt.show()
+
+    return plt
 
 
 if __name__ == '__main__':
