@@ -23,7 +23,7 @@ def i2b(integer, max_len):
 
 class FCDCMDP(WeightedUserModel):
 
-    def __init__(self, num_news, budget, mdp_cls=None, **mdp_kwargs):
+    def __init__(self, num_news, budget, mdp_cls=None, is_verbose=False, **mdp_kwargs):
         super().__init__()
         self.mdp = None
         self.mdp_cls = mdp_cls if mdp_cls else FiniteHorizon
@@ -31,6 +31,7 @@ class FCDCMDP(WeightedUserModel):
 
         self.num_news = num_news
         self.budget = budget
+        self.is_verbose = is_verbose
 
         # (a, a)
         self.actions = self.get_actions()
@@ -51,7 +52,8 @@ class FCDCMDP(WeightedUserModel):
 
         self.reward = self.get_reward(active_news_to_tree, network_propagation)
         self.mdp = self.mdp_cls(self.transition, self.reward, **self.mdp_kwargs)
-        self.mdp.setVerbose()
+        if self.is_verbose:
+            self.mdp.setVerbose()
         self.mdp.run()
 
         current_state = b2i(np.asarray([0 if is_not_checked_and_not_blocked(network_propagation, info) else 1
