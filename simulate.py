@@ -223,7 +223,7 @@ def simulate_models(models: List, seed_value=None,
 if __name__ == '__main__':
     models_to_test = [
         FCDCMDP(num_news=14, budget=1, discount=1, N=None),
-        WeightedMajorityVoting(), MajorityVoting(), Random()  # Baselines
+        WeightedMV(), MajorityVoting(), Random()  # Baselines
     ]
     finished_networks = simulate_models(models=models_to_test, seed_value=32451,
                                         number_of_nodes=140, num_of_trees=16, propagation_prob=0.5,
@@ -242,4 +242,4 @@ if __name__ == '__main__':
     bts = [get_blocked_time_of_fake_news(net) for net in finished_networks]
     build_hist(bts, model_names,
                title="Blocked Fake News", xlabel="time", ylabel="number",
-               range=(0, finished_time), cumulative=True, histtype='step')
+               range=(0, finished_time), cumulative=True, histtype='step', legend_loc="lower right")

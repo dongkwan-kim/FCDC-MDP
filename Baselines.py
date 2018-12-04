@@ -76,7 +76,7 @@ class WeightedUserModel:
         self.node_to_history[node][idx_real_fake][idx_node_flagged] += 1
 
 
-class WeightedMajorityVoting(WeightedUserModel):
+class WeightedMV(WeightedUserModel):
 
     def __init__(self):
         super().__init__()
