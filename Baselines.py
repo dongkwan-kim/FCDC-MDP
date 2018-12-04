@@ -1,3 +1,4 @@
+from copy import deepcopy
 from functools import reduce
 
 from NPExtension import *
@@ -97,6 +98,48 @@ class WeightedMV(WeightedUserModel):
                 voting_result.append((news_info, weighted_vote))
 
         voting_result = sorted(voting_result, key=lambda nt: -nt[1])
+        selected = [news_info for news_info, flagged in voting_result[:budget]]
+
+        # Update users' history
+        for sn_info in selected:
+            tree = active_news_to_tree[sn_info]
+            self.inc_node_history(sn_info, is_node_flagged=True, is_real_fake=tree.getattr("is_fake"))
+
+        network_propagation.setattr("check_log", network_propagation.getattr("check_log", []) + selected)
+        return selected
+
+
+class ExposureWMV(WeightedUserModel):
+
+    def __init__(self):
+        super().__init__()
+        self.scaling = 4
+
+    def select_fake_news(self,
+                         active_news_to_tree: Dict[Any, PropagationTree],
+                         network_propagation: TwitterNetworkPropagation,
+                         budget: int,
+                         select_exact: bool) -> List[Any]:
+
+        exposure_wmv_result = []
+        for news_info, tree in active_news_to_tree.items():
+            if is_not_checked_and_not_blocked(network_propagation, news_info):
+
+                flag_log = tree.getattr("flag_log", [])
+                weighted_vote = sum(self.scaling * self.get_p_flag_fake(node_id) * self.get_p_not_flag_not_fake(node_id)
+                                    for _, node_id in flag_log)
+
+                expose_log = tree.getattr("expose_log")
+                exposure_candidates = set()
+                for t, node in expose_log:
+                    exposure_candidates.update(network_propagation.user_id_to_follower_ids[node])
+                for first_hop_candidate in deepcopy(exposure_candidates):
+                    exposure_candidates.update(network_propagation.user_id_to_follower_ids[first_hop_candidate])
+
+                delta_e = len(exposure_candidates.difference({exposed for t, exposed in expose_log}))
+                exposure_wmv_result.append((news_info, weighted_vote*delta_e))
+
+        voting_result = sorted(exposure_wmv_result, key=lambda nt: -nt[1])
         selected = [news_info for news_info, flagged in voting_result[:budget]]
 
         # Update users' history
