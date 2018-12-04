@@ -55,6 +55,7 @@ class MajorityVoting:
 class WeightedUserModel:
 
     def __init__(self):
+        self.scaling = 1
         self.node_to_history = defaultdict(lambda: [[0, 0], [0, 0]])
 
     def get_p_not_flag_not_fake(self, node):

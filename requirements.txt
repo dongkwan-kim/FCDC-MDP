@@ -4,6 +4,7 @@ kiwisolver==1.0.1
 matplotlib==3.0.2
 networkx==2.2
 numpy==1.15.4
+pymdptoolbox==4.0b3
 pyparsing==2.3.0
 python-dateutil==2.7.5
 scipy==1.1.0

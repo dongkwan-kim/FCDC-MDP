@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from FCDCMDP import FCDCMDP
 from NP import *
 from Baselines import *
 from termcolor import cprint
@@ -220,10 +221,10 @@ def simulate_models(models: List, seed_value=None,
 
 
 if __name__ == '__main__':
-    models_to_test = [WeightedMajorityVoting(), MajorityVoting(), Random()]
-    finished_networks = simulate_models(models=models_to_test, seed_value=874132,
-                                        number_of_nodes=150, num_of_trees=37, propagation_prob=0.5,
-                                        fake_ratio=0.3, with_draw=True,
+    models_to_test = [FCDCMDP(num_news=14, budget=1, discount=1, N=None), MajorityVoting(), Random()]
+    finished_networks = simulate_models(models=models_to_test, seed_value=32451,
+                                        number_of_nodes=140, num_of_trees=14, propagation_prob=0.5,
+                                        fake_ratio=0.4, with_draw=True,
                                         budget=1, start_time=1, select_exact=True,
                                         is_verbose=True)
 
