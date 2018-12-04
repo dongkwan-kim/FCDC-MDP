@@ -47,7 +47,7 @@ class FCDCMDP(WeightedUserModel):
                          select_exact: bool) -> List[Any]:
 
         if self.mdp_kwargs["N"] is None:
-            self.mdp_kwargs["N"] = network_propagation.get_time_to_finish()
+            self.mdp_kwargs["N"] = 1
 
         self.reward = self.get_reward(active_news_to_tree, network_propagation)
         self.mdp = self.mdp_cls(self.transition, self.reward, **self.mdp_kwargs)
