@@ -242,4 +242,5 @@ if __name__ == '__main__':
     bts = [get_blocked_time_of_fake_news(net) for net in finished_networks]
     build_hist(bts, model_names,
                title="Blocked Fake News", xlabel="time", ylabel="number",
-               range=(0, finished_time), cumulative=True, histtype='step', legend_loc="lower right")
+               range=(0, finished_time), cumulative=True, histtype='step', legend_loc="lower right",
+               save_file_name="fig.pdf")

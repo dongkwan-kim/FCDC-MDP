@@ -3,7 +3,7 @@ import numpy as np
 
 
 def build_hist(list_of_enumerable, labels, title, xlabel=None, ylabel=None, legend_loc="upper left",
-               **kwargs):
+               save_file_name=None, **kwargs):
 
     fig, ax = plt.subplots(figsize=(5, 4))
 
@@ -18,6 +18,10 @@ def build_hist(list_of_enumerable, labels, title, xlabel=None, ylabel=None, lege
     ax.legend(loc=legend_loc)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+
+    if save_file_name:
+        plt.savefig(save_file_name)
+
     plt.show()
 
     return plt
