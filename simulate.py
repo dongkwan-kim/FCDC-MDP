@@ -221,11 +221,14 @@ def simulate_models(models: List, seed_value=None,
 
 
 if __name__ == '__main__':
-    models_to_test = [FCDCMDP(num_news=14, budget=1, discount=1, N=None), MajorityVoting(), Random()]
+    models_to_test = [
+        FCDCMDP(num_news=14, budget=1, discount=1, N=None),
+        WeightedMajorityVoting(), MajorityVoting(), Random()  # Baselines
+    ]
     finished_networks = simulate_models(models=models_to_test, seed_value=32451,
-                                        number_of_nodes=140, num_of_trees=14, propagation_prob=0.5,
+                                        number_of_nodes=140, num_of_trees=16, propagation_prob=0.5,
                                         fake_ratio=0.4, with_draw=True,
-                                        budget=1, start_time=1, select_exact=True,
+                                        budget=1, start_time=0, select_exact=True,
                                         is_verbose=True)
 
     num_of_fake_news = len(finished_networks[0].filter_trees(lambda x: x.is_fake))
@@ -234,7 +237,7 @@ if __name__ == '__main__':
 
     neu = [get_non_exposed_user_to_fake_news(net) for net in finished_networks]
     build_bar(model_names, [sum([len(u) for u in us]) for us in neu],
-              ylabel="# of Users", title="Non-exposed Users to Fake News")
+              ylabel="# of Users", title="# of Users Not Exposed to Fake News")
 
     bts = [get_blocked_time_of_fake_news(net) for net in finished_networks]
     build_hist(bts, model_names,
